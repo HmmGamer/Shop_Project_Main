@@ -1,8 +1,29 @@
+using Shop_ProjForWeb.Core.Application.Configuration;
 using Shop_ProjForWeb.Core.Application.Interfaces;
 using Shop_ProjForWeb.Core.Application.Services;
+using Shop_ProjForWeb.Infrastructure.Persistent.DbContext;
+using Shop_ProjForWeb.Infrastructure.Persistent.Configurations;
+using Shop_ProjForWeb.Infrastructure.Repositories;
+using Shop_ProjForWeb.Presentation.Middleware;
+using Microsoft.EntityFrameworkCore;
 using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+builder.Services.AddDbContext<SupermarketDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Register Repositories
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IOrderItemRepository, OrderItemRepository>();
+builder.Services.AddScoped<IVipStatusHistoryRepository, VipStatusHistoryRepository>();
+
+// Register Unit of Work
+builder.Services.AddScoped<Shop_ProjForWeb.Core.Application.Interfaces.IUnitOfWork, Shop_ProjForWeb.Infrastructure.UnitOfWork>();
 
 // Register Services
 builder.Services.AddScoped<IValidationService, ValidationService>();
@@ -23,6 +44,8 @@ builder.Services.AddScoped<Shop_ProjForWeb.Core.Domain.Interfaces.IDiscountCalcu
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.Services.AddScoped<ProductImageService>();
+
+builder.Services.Configure<FileUploadOptions>(builder.Configuration.GetSection("FileUpload"));
 
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<AgifyService>();
@@ -57,6 +80,41 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+// Ensure UploadedFiles directory exists
+var uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles");
+if (!Directory.Exists(uploadFolder))
+{
+    Directory.CreateDirectory(uploadFolder);
+}
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
+// Apply migrations and seed database
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<SupermarketDbContext>();
+    
+    // Only run migrations and seeding if using a relational database (not in-memory for tests)
+    if (db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory")
+    {
+        db.Database.Migrate();
+        await DbSeeder.SeedAsync(db);
+    }
+}
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+// Enable static file serving for uploaded images
+app.UseStaticFiles();
+
+app.UseAuthorization();
+
+app.MapControllers();
+
 // Add Health Check endpoints
 app.MapHealthChecks("/health");
 app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
@@ -65,3 +123,6 @@ app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.Health
 });
 
 app.Run();
+
+// Make the implicit Program class accessible to integration tests
+public partial class Program { }
