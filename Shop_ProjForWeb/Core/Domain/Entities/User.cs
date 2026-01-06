@@ -8,6 +8,11 @@ public class User : BaseEntity
     public string? Email { get; set; }
     public string? Phone { get; set; }
     public string? Address { get; set; }
+
+    /// <summary>
+    /// Stored password hash (PBKDF2) including salt. Not plain-text.
+    /// </summary>
+    public string? PasswordHash { get; set; }
     
     /// <summary>
     /// Computed property - not stored in DB. VIP status is derived from VipTier.
