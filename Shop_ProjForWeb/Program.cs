@@ -7,12 +7,51 @@ using Shop_ProjForWeb.Infrastructure.Repositories;
 using Shop_ProjForWeb.Presentation.Middleware;
 using Microsoft.EntityFrameworkCore;
 using FluentValidation;
+using Serilog;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Shop_ProjForWeb.Core.Application.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 // Add services to the container.
 builder.Services.AddDbContext<SupermarketDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// JWT configuration
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>();
+var key = Encoding.UTF8.GetBytes(jwtOptions?.Key ?? string.Empty);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtOptions?.Issuer,
+        ValidAudience = jwtOptions?.Audience,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ClockSkew = TimeSpan.Zero
+    };
+});
 
 // Register Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
