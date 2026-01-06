@@ -1,5 +1,6 @@
 namespace Shop_ProjForWeb.Presentation.Controllers;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shop_ProjForWeb.Core.Application.DTOs;
 using Shop_ProjForWeb.Core.Application.Interfaces;
@@ -9,6 +10,7 @@ using Shop_ProjForWeb.Core.Application.Interfaces;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class UsersController(IUserService userService, IValidationService validationService) : ControllerBase
 {
     private readonly IUserService _userService = userService;
