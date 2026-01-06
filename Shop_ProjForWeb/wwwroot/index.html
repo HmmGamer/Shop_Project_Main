@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Shop Frontend - E-commerce platform for browsing and purchasing products">
+    <title>Shop Frontend</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Navigation Header -->
+    <header class="header">
+        <nav class="nav">
+            <div class="nav-container">
+                <div class="nav-brand">
+                    <h1 class="nav-title">Shop Frontend</h1>
+                </div>
+                <div class="nav-menu">
+                    <a href="#catalog" class="nav-link" data-route="catalog">Products</a>
+                    <a href="#cart" class="nav-link" data-route="cart">
+                        Cart <span class="cart-count" id="cart-count">0</span>
+                    </a>
+                    <a href="#account" class="nav-link" data-route="account">Account</a>
+                    <a href="#admin" class="nav-link admin-only" data-route="admin" style="display: none;">Admin</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb" id="breadcrumb" aria-label="Breadcrumb">
+        <ol class="breadcrumb-list">
+            <li class="breadcrumb-item">
+                <a href="#catalog" data-route="catalog">Home</a>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main" id="main-content">
+        <!-- Loading Indicator -->
+        <div class="loading" id="loading-indicator" style="display: none;">
+            <div class="loading-spinner"></div>
+            <p>Loading...</p>
+        </div>
+
+        <!-- Error Message Container -->
+        <div class="error-container" id="error-container" style="display: none;">
+            <div class="error-message">
+                <h3>Something went wrong</h3>
+                <p id="error-text"></p>
+                <button class="btn btn-primary" id="retry-button">Retry</button>
+            </div>
+        </div>
+
+        <!-- Page Content Container -->
+        <div class="page-container" id="page-container">
+            <!-- Dynamic content will be loaded here -->
+        </div>
+    </main>
+
+    <!-- Notification Container -->
+    <div class="notification-container" id="notification-container"></div>
+
+    <!-- Modal Container -->
+    <div class="modal-overlay" id="modal-overlay" style="display: none;">
+        <div class="modal" id="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-title"></h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-footer" id="modal-footer"></div>
+        </div>
+    </div>
+
+    <!-- JavaScript Modules -->
+    <script src="js/api-client.js"></script>
+    <script src="js/state-manager.js"></script>
+    <script src="js/router.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/pages/catalog.js"></script>
+    <script src="js/pages/cart.js"></script>
+    <script src="js/pages/account.js"></script>
+    <script src="js/pages/admin.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
