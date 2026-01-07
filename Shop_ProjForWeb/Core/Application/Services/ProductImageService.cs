@@ -1,8 +1,7 @@
 using Shop_ProjForWeb.Core.Application.Configuration;
 using Shop_ProjForWeb.Core.Application.Interfaces;
 using Microsoft.Extensions.Options;
-using System.Drawing;
-using System.Drawing.Imaging;
+using SixLabors.ImageSharp;
 
 namespace Shop_ProjForWeb.Core.Application.Services;
 
@@ -177,8 +176,9 @@ public class ProductImageService
         // Validate image dimensions
         try
         {
-            using var imageStream = new Bitmap(image.OpenReadStream());
-            if (imageStream.Width < 50 || imageStream.Height < 50)
+            using var imageStream = image.OpenReadStream();
+            using var img = Image.Load(imageStream);
+            if (img.Width < 50 || img.Height < 50)
             {
                 throw new ArgumentException("Image dimensions are too small (minimum: 50x50 pixels)");
             }
@@ -213,6 +213,35 @@ public class ProductImageService
     {
         var thumbnailPath = imagePath.Replace("/images/", "/thumbnails/");
         return Task.FromResult<string?>(thumbnailPath);
+    }
+
+    /// <summary>
+    /// Deletes an image from storage
+    /// </summary>
+    public void DeleteImage(string imagePath)
+    {
+        if (string.IsNullOrEmpty(imagePath))
+        {
+            return;
+        }
+        
+        try
+        {
+            _fileStorageService.DeleteFileAsync(imagePath).GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Failed to delete image: {Error}", ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Uploads an image for a product
+    /// </summary>
+    public async Task<string> UploadImageAsync(IFormFile file, Guid productId)
+    {
+        var result = await UploadProductImageAsync(file, productId);
+        return result.ImageUrl;
     }
 }
 
