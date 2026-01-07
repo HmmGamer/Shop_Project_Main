@@ -129,14 +129,6 @@ class AccountPage {
                     required: true
                 })}
 
-                ${this.components.createFormField({
-                    type: 'tel',
-                    name: 'phoneNumber',
-                    label: 'Phone Number',
-                    placeholder: 'Enter your phone number',
-                    required: false
-                })}
-
                 <div class="form-group">
                     <button type="submit" class="btn btn-primary btn-lg auth-submit-btn">
                         Create Account
@@ -199,10 +191,6 @@ class AccountPage {
                         <div class="profile-field">
                             <label>Full Name:</label>
                             <span>${this.components.escapeHtml(this.currentUser.fullName)}</span>
-                        </div>
-                        <div class="profile-field">
-                            <label>Phone Number:</label>
-                            <span>${this.currentUser.phoneNumber || 'Not provided'}</span>
                         </div>
                         <div class="profile-field">
                             <label>Account Status:</label>
@@ -433,25 +421,39 @@ class AccountPage {
             return;
         }
 
+        if (fullName.length < 2) {
+            this.components.showNotification('Full name must be at least 2 characters', 'error');
+            return;
+        }
+
         try {
             this.setAuthLoading(true);
 
-            // Try to find existing user by name (simplified login)
-            const users = await this.apiClient.getUsers({ pageSize: 100 });
-            const existingUser = users.items.find(user => 
-                user.fullName.toLowerCase() === fullName.toLowerCase()
-            );
-
-            if (existingUser) {
-                this.stateManager.setCurrentUser(existingUser);
-                this.components.showNotification(`Welcome back, ${existingUser.fullName}!`, 'success');
-            } else {
-                this.components.showNotification('User not found. Please register first.', 'error');
-                this.switchAuthTab('register');
-                // Pre-fill register form
-                const registerNameInput = document.querySelector('#register-form [name="fullName"]');
-                if (registerNameInput) {
-                    registerNameInput.value = fullName;
+            // For this simplified demo, we'll create a user if they don't exist
+            // In a real app, this would use proper authentication with email/password
+            try {
+                // Try to create user (works for new users)
+                const newUser = await this.apiClient.createUser({
+                    fullName: fullName
+                });
+                this.stateManager.setCurrentUser(newUser);
+                this.components.showNotification(`Welcome, ${newUser.fullName}!`, 'success');
+                return;
+            } catch (createError) {
+                // User might already exist or validation failed
+                console.log('User creation failed:', createError);
+                
+                // Show appropriate message based on error
+                if (createError.status === 400) {
+                    this.components.showNotification(
+                        createError.data?.error || 'Invalid name. Please try a different name.',
+                        'warning'
+                    );
+                } else {
+                    this.components.showNotification(
+                        'Could not create account. Please try again.',
+                        'warning'
+                    );
                 }
             }
 
@@ -465,7 +467,6 @@ class AccountPage {
 
     async handleRegister(formData) {
         const fullName = formData.get('fullName')?.trim();
-        const phoneNumber = formData.get('phoneNumber')?.trim();
 
         if (!fullName) {
             this.components.showNotification('Please enter your full name', 'error');
@@ -480,10 +481,9 @@ class AccountPage {
         try {
             this.setAuthLoading(true);
 
-            // Create new user
+            // Create new user - backend only accepts fullName
             const userData = {
-                fullName,
-                phoneNumber: phoneNumber || null
+                fullName
             };
 
             const newUser = await this.apiClient.createUser(userData);
@@ -498,6 +498,8 @@ class AccountPage {
             if (error.status === 400 && error.data?.validationErrors) {
                 const errors = Object.values(error.data.validationErrors).flat();
                 errorMessage = errors.join(', ');
+            } else if (error.data?.error) {
+                errorMessage = error.data.error;
             }
             
             this.components.showNotification(errorMessage, 'error');
@@ -508,6 +510,8 @@ class AccountPage {
 
     handleLogout() {
         this.stateManager.logout();
+        // Clear auth token from API client
+        this.apiClient.clearAuthToken();
         this.components.showNotification('You have been logged out', 'info');
         // Re-render to show auth page
         this.render();

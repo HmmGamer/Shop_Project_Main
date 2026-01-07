@@ -43,6 +43,22 @@ public class AuthController : ControllerBase
         roles.Add("User");
 
         var token = _jwtService.GenerateToken(user, roles);
-        return Ok(new GenericResponseDto<object> { Success = true, Data = new { Token = token } });
+        return Ok(new GenericResponseDto<object> 
+        { 
+            Success = true, 
+            Data = new 
+            { 
+                Token = token,
+                User = new 
+                {
+                    Id = user.Id,
+                    FullName = user.FullName,
+                    Email = user.Email,
+                    IsVip = user.IsVip,
+                    VipTier = user.VipTier,
+                    TotalSpending = user.TotalSpending
+                }
+            } 
+        });
     }
 }

@@ -164,12 +164,24 @@ class App {
 
     updateBreadcrumb(pageName, subPage = null) {
         const breadcrumb = document.getElementById('breadcrumb');
+        if (!breadcrumb) return;
+        
         const breadcrumbList = breadcrumb.querySelector('.breadcrumb-list');
+        if (!breadcrumbList) return;
         
         // Clear existing breadcrumb items except home
         const homeItem = breadcrumbList.querySelector('.breadcrumb-item');
         breadcrumbList.innerHTML = '';
-        breadcrumbList.appendChild(homeItem);
+        
+        // Re-create home item if it doesn't exist
+        if (homeItem) {
+            breadcrumbList.appendChild(homeItem);
+        } else {
+            const newHomeItem = document.createElement('li');
+            newHomeItem.className = 'breadcrumb-item';
+            newHomeItem.innerHTML = '<a href="#catalog" data-route="catalog">Home</a>';
+            breadcrumbList.appendChild(newHomeItem);
+        }
         
         // Add current page to breadcrumb
         if (pageName !== 'catalog') {
@@ -223,12 +235,19 @@ class App {
     }
 
     showLoading(message = 'Loading...') {
-        const loading = document.getElementById('loading-indicator');
-        const pageContainer = document.getElementById('page-container');
-        if (loading && pageContainer) {
-            loading.querySelector('.loading-message').textContent = message;
-            loading.style.display = 'flex';
-            pageContainer.style.display = 'none';
+        try {
+            const loading = document.getElementById('loading-indicator');
+            const pageContainer = document.getElementById('page-container');
+            if (loading) {
+                const loadingMsg = loading.querySelector('p');
+                if (loadingMsg) loadingMsg.textContent = message;
+                loading.style.display = 'flex';
+            }
+            if (pageContainer) {
+                pageContainer.style.display = 'none';
+            }
+        } catch (e) {
+            console.warn('showLoading error:', e);
         }
     }
 

@@ -225,21 +225,21 @@ public class OrdersController(
     /// Processes payment for a pending order and updates user VIP status if eligible
     /// </summary>
     /// <param name="orderId">The unique identifier of the order</param>
-    /// <returns>No content on success</returns>
-    /// <response code="204">Payment processed successfully</response>
+    /// <returns>Updated user VIP data on success</returns>
+    /// <response code="200">Payment processed successfully, returns updated user data</response>
     /// <response code="404">Order or user not found</response>
     /// <response code="500">Internal server error</response>
     [HttpPost("{orderId}/pay")]
     [AllowAnonymous]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(UserVipDataDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> PayOrder(Guid orderId)
     {
         try
         {
-            await _orderService.PayOrderAsync(orderId);
-            return NoContent();
+            var updatedUserData = await _orderService.PayOrderAsync(orderId);
+            return Ok(new { success = true, updatedUserData });
         }
         catch (OrderNotFoundException ex)
         {

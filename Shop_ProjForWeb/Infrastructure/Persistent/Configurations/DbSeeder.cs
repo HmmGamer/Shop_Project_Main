@@ -8,16 +8,71 @@ namespace Shop_ProjForWeb.Infrastructure.Persistent.Configurations
 {
     public static class DbSeeder
     {
+        // Image URL mapping for products
+        private static readonly Dictionary<string, string> ProductImageUrls = new()
+        {
+            { "Organic Honeycrisp Apples", "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400" },
+            { "Fresh Bananas", "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400" },
+            { "Whole Milk Gallon", "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400" },
+            { "Artisan Sourdough Bread", "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400" },
+            { "Free-Range Chicken Breast", "https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=400" },
+            { "Atlantic Salmon Fillet", "https://images.unsplash.com/photo-1499125562588-29fb8a56b5d5?w=400" },
+            { "Organic Baby Spinach", "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400" },
+            { "Roma Tomatoes", "https://images.unsplash.com/photo-1546470427-227c7369a9b8?w=400" },
+            { "Sharp Cheddar Cheese", "https://images.unsplash.com/photo-1618164436241-4473940d1f5c?w=400" },
+            { "Greek Yogurt", "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400" },
+            { "Chocolate Croissants", "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400" },
+            { "Ground Beef 80/20", "https://images.unsplash.com/photo-1588168333986-5078d3ae3976?w=400" },
+            { "Fresh Strawberries", "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=400" },
+            { "Avocados", "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=400" },
+            { "Pasta Penne", "https://images.unsplash.com/photo-1551462147-ff29053bfc14?w=400" },
+            { "Extra Virgin Olive Oil", "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400" },
+            { "Organic Eggs", "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=400" },
+            { "Vanilla Ice Cream", "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=400" },
+            { "Frozen Blueberries", "https://images.unsplash.com/photo-1498557850523-fd3d118b962e?w=400" },
+            { "Quinoa", "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400" },
+            { "Almond Butter", "https://images.unsplash.com/photo-1612187209234-a0e7e5c0e1c8?w=400" },
+            { "Orange Juice", "https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=400" },
+            { "Green Tea", "https://images.unsplash.com/photo-1556881286-fc6915169721?w=400" },
+            { "Dark Chocolate Bar", "https://images.unsplash.com/photo-1548907040-4baa42d10919?w=400" },
+            { "Mixed Nuts", "https://images.unsplash.com/photo-1536816579748-4ecb3f03d72a?w=400" }
+        };
+
         public static async Task SeedAsync(SupermarketDbContext db)
         {
-            // Only seed if database is empty
-            if (await db.Users.AnyAsync() || await db.Products.AnyAsync())
+            // Check if we need to update existing products with images
+            var existingProducts = await db.Products.ToListAsync();
+            if (existingProducts.Any())
+            {
+                var updated = false;
+                foreach (var product in existingProducts)
+                {
+                    if (string.IsNullOrEmpty(product.ImageUrl))
+                    {
+                        if (ProductImageUrls.TryGetValue(product.Name, out var imageUrl))
+                        {
+                            product.ImageUrl = imageUrl;
+                            updated = true;
+                        }
+                        else
+                        {
+                            // Default image for unknown products
+                            product.ImageUrl = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400";
+                            updated = true;
+                        }
+                    }
+                }
+                if (updated)
+                {
+                    await db.SaveChangesAsync();
+                }
                 return;
+            }
 
             var random = new Random(42); // Fixed seed for consistent data
 
             // Default password for seeded users (development only)
-            const string defaultPassword = "Password123!";
+            const string defaultPassword = "1234!";
 
             // Seed users with hardcoded data
             // Note: IsVip is now a computed property (VipTier > 0), not stored in DB
@@ -56,31 +111,31 @@ namespace Shop_ProjForWeb.Infrastructure.Persistent.Configurations
             // Create 25 realistic products with hardcoded data
             var products = new List<Product>
             {
-                new Product { Name = "Organic Honeycrisp Apples", Description = "Sweet and crispy organic apples, perfect for snacking", Category = "Fruits", BasePrice = 5.99m, DiscountPercent = 10, IsActive = true },
-                new Product { Name = "Fresh Bananas", Description = "Ripe yellow bananas, great source of potassium", Category = "Fruits", BasePrice = 2.49m, DiscountPercent = 0, IsActive = true },
-                new Product { Name = "Whole Milk Gallon", Description = "Fresh whole milk from local dairy farms", Category = "Dairy", BasePrice = 4.29m, DiscountPercent = 5, IsActive = true },
-                new Product { Name = "Artisan Sourdough Bread", Description = "Handcrafted sourdough bread with crispy crust", Category = "Bakery", BasePrice = 6.99m, DiscountPercent = 15, IsActive = true },
-                new Product { Name = "Free-Range Chicken Breast", Description = "Premium free-range chicken breast, boneless", Category = "Meat", BasePrice = 12.99m, DiscountPercent = 8, IsActive = true },
-                new Product { Name = "Atlantic Salmon Fillet", Description = "Fresh Atlantic salmon, wild-caught", Category = "Seafood", BasePrice = 18.99m, DiscountPercent = 12, IsActive = true },
-                new Product { Name = "Organic Baby Spinach", Description = "Fresh organic baby spinach leaves", Category = "Vegetables", BasePrice = 3.99m, DiscountPercent = 0, IsActive = true },
-                new Product { Name = "Roma Tomatoes", Description = "Fresh Roma tomatoes, perfect for cooking", Category = "Vegetables", BasePrice = 2.99m, DiscountPercent = 5, IsActive = true },
-                new Product { Name = "Sharp Cheddar Cheese", Description = "Aged sharp cheddar cheese block", Category = "Dairy", BasePrice = 7.49m, DiscountPercent = 10, IsActive = true },
-                new Product { Name = "Greek Yogurt", Description = "Creamy Greek yogurt, high in protein", Category = "Dairy", BasePrice = 5.99m, DiscountPercent = 0, IsActive = true },
-                new Product { Name = "Chocolate Croissants", Description = "Buttery croissants filled with chocolate", Category = "Bakery", BasePrice = 8.99m, DiscountPercent = 20, IsActive = true },
-                new Product { Name = "Ground Beef 80/20", Description = "Fresh ground beef, 80% lean", Category = "Meat", BasePrice = 9.99m, DiscountPercent = 0, IsActive = true },
-                new Product { Name = "Fresh Strawberries", Description = "Sweet and juicy strawberries", Category = "Fruits", BasePrice = 4.99m, DiscountPercent = 15, IsActive = true },
-                new Product { Name = "Avocados", Description = "Ripe Hass avocados, perfect for guacamole", Category = "Fruits", BasePrice = 1.99m, DiscountPercent = 0, IsActive = true },
-                new Product { Name = "Pasta Penne", Description = "Italian durum wheat penne pasta", Category = "Pantry", BasePrice = 2.99m, DiscountPercent = 5, IsActive = true },
-                new Product { Name = "Extra Virgin Olive Oil", Description = "Cold-pressed extra virgin olive oil", Category = "Pantry", BasePrice = 12.99m, DiscountPercent = 8, IsActive = true },
-                new Product { Name = "Organic Eggs", Description = "Free-range organic eggs, dozen", Category = "Dairy", BasePrice = 6.99m, DiscountPercent = 0, IsActive = true },
-                new Product { Name = "Vanilla Ice Cream", Description = "Premium vanilla ice cream, half gallon", Category = "Frozen", BasePrice = 7.99m, DiscountPercent = 12, IsActive = true },
-                new Product { Name = "Frozen Blueberries", Description = "Wild frozen blueberries, antioxidant rich", Category = "Frozen", BasePrice = 5.49m, DiscountPercent = 0, IsActive = true },
-                new Product { Name = "Quinoa", Description = "Organic quinoa, superfood grain", Category = "Pantry", BasePrice = 8.99m, DiscountPercent = 10, IsActive = true },
-                new Product { Name = "Almond Butter", Description = "Natural almond butter, no added sugar", Category = "Pantry", BasePrice = 11.99m, DiscountPercent = 5, IsActive = true },
-                new Product { Name = "Orange Juice", Description = "Fresh squeezed orange juice, no pulp", Category = "Beverages", BasePrice = 4.99m, DiscountPercent = 0, IsActive = true },
-                new Product { Name = "Green Tea", Description = "Premium green tea bags, 20 count", Category = "Beverages", BasePrice = 6.49m, DiscountPercent = 15, IsActive = true },
-                new Product { Name = "Dark Chocolate Bar", Description = "70% cocoa dark chocolate bar", Category = "Snacks", BasePrice = 3.99m, DiscountPercent = 0, IsActive = true },
-                new Product { Name = "Mixed Nuts", Description = "Premium mixed nuts, lightly salted", Category = "Snacks", BasePrice = 9.99m, DiscountPercent = 8, IsActive = true }
+                new Product { Name = "Organic Honeycrisp Apples", Description = "Sweet and crispy organic apples, perfect for snacking", Category = "Fruits", BasePrice = 5.99m, DiscountPercent = 10, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400" },
+                new Product { Name = "Fresh Bananas", Description = "Ripe yellow bananas, great source of potassium", Category = "Fruits", BasePrice = 2.49m, DiscountPercent = 0, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400" },
+                new Product { Name = "Whole Milk Gallon", Description = "Fresh whole milk from local dairy farms", Category = "Dairy", BasePrice = 4.29m, DiscountPercent = 5, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400" },
+                new Product { Name = "Artisan Sourdough Bread", Description = "Handcrafted sourdough bread with crispy crust", Category = "Bakery", BasePrice = 6.99m, DiscountPercent = 15, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400" },
+                new Product { Name = "Free-Range Chicken Breast", Description = "Premium free-range chicken breast, boneless", Category = "Meat", BasePrice = 12.99m, DiscountPercent = 8, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=400" },
+                new Product { Name = "Atlantic Salmon Fillet", Description = "Fresh Atlantic salmon, wild-caught", Category = "Seafood", BasePrice = 18.99m, DiscountPercent = 12, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1499125562588-29fb8a56b5d5?w=400" },
+                new Product { Name = "Organic Baby Spinach", Description = "Fresh organic baby spinach leaves", Category = "Vegetables", BasePrice = 3.99m, DiscountPercent = 0, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400" },
+                new Product { Name = "Roma Tomatoes", Description = "Fresh Roma tomatoes, perfect for cooking", Category = "Vegetables", BasePrice = 2.99m, DiscountPercent = 5, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1546470427-227c7369a9b8?w=400" },
+                new Product { Name = "Sharp Cheddar Cheese", Description = "Aged sharp cheddar cheese block", Category = "Dairy", BasePrice = 7.49m, DiscountPercent = 10, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1618164436241-4473940d1f5c?w=400" },
+                new Product { Name = "Greek Yogurt", Description = "Creamy Greek yogurt, high in protein", Category = "Dairy", BasePrice = 5.99m, DiscountPercent = 0, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400" },
+                new Product { Name = "Chocolate Croissants", Description = "Buttery croissants filled with chocolate", Category = "Bakery", BasePrice = 8.99m, DiscountPercent = 20, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400" },
+                new Product { Name = "Ground Beef 80/20", Description = "Fresh ground beef, 80% lean", Category = "Meat", BasePrice = 9.99m, DiscountPercent = 0, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1588168333986-5078d3ae3976?w=400" },
+                new Product { Name = "Fresh Strawberries", Description = "Sweet and juicy strawberries", Category = "Fruits", BasePrice = 4.99m, DiscountPercent = 15, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=400" },
+                new Product { Name = "Avocados", Description = "Ripe Hass avocados, perfect for guacamole", Category = "Fruits", BasePrice = 1.99m, DiscountPercent = 0, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=400" },
+                new Product { Name = "Pasta Penne", Description = "Italian durum wheat penne pasta", Category = "Pantry", BasePrice = 2.99m, DiscountPercent = 5, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1551462147-ff29053bfc14?w=400" },
+                new Product { Name = "Extra Virgin Olive Oil", Description = "Cold-pressed extra virgin olive oil", Category = "Pantry", BasePrice = 12.99m, DiscountPercent = 8, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400" },
+                new Product { Name = "Organic Eggs", Description = "Free-range organic eggs, dozen", Category = "Dairy", BasePrice = 6.99m, DiscountPercent = 0, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=400" },
+                new Product { Name = "Vanilla Ice Cream", Description = "Premium vanilla ice cream, half gallon", Category = "Frozen", BasePrice = 7.99m, DiscountPercent = 12, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=400" },
+                new Product { Name = "Frozen Blueberries", Description = "Wild frozen blueberries, antioxidant rich", Category = "Frozen", BasePrice = 5.49m, DiscountPercent = 0, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1498557850523-fd3d118b962e?w=400" },
+                new Product { Name = "Quinoa", Description = "Organic quinoa, superfood grain", Category = "Pantry", BasePrice = 8.99m, DiscountPercent = 10, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400" },
+                new Product { Name = "Almond Butter", Description = "Natural almond butter, no added sugar", Category = "Pantry", BasePrice = 11.99m, DiscountPercent = 5, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1612187209234-a0e7e5c0e1c8?w=400" },
+                new Product { Name = "Orange Juice", Description = "Fresh squeezed orange juice, no pulp", Category = "Beverages", BasePrice = 4.99m, DiscountPercent = 0, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=400" },
+                new Product { Name = "Green Tea", Description = "Premium green tea bags, 20 count", Category = "Beverages", BasePrice = 6.49m, DiscountPercent = 15, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1556881286-fc6915169721?w=400" },
+                new Product { Name = "Dark Chocolate Bar", Description = "70% cocoa dark chocolate bar", Category = "Snacks", BasePrice = 3.99m, DiscountPercent = 0, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1548907040-4baa42d10919?w=400" },
+                new Product { Name = "Mixed Nuts", Description = "Premium mixed nuts, lightly salted", Category = "Snacks", BasePrice = 9.99m, DiscountPercent = 8, IsActive = true, ImageUrl = "https://images.unsplash.com/photo-1536816579748-4ecb3f03d72a?w=400" }
             };
 
             await db.Products.AddRangeAsync(products);

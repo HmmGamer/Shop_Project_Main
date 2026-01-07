@@ -404,6 +404,21 @@ class AdminPage {
                 })}
 
                 ${this.components.createFormField({
+                    type: 'number',
+                    name: 'initialStock',
+                    label: 'Initial Stock Quantity',
+                    placeholder: '0',
+                    required: true
+                })}
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" name="isActive" checked>
+                        Product is active
+                    </label>
+                </div>
+
+                ${this.components.createFormField({
                     type: 'file',
                     name: 'image',
                     label: 'Product Image',
@@ -446,7 +461,9 @@ class AdminPage {
         const productData = {
             name: formData.get('name').trim(),
             basePrice: parseFloat(formData.get('basePrice')),
-            discountPercent: parseInt(formData.get('discountPercent')) || 0
+            discountPercent: parseInt(formData.get('discountPercent')) || 0,
+            isActive: formData.get('isActive') === 'on',
+            initialStock: parseInt(formData.get('initialStock')) || 0
         };
 
         // Additional validation
@@ -457,6 +474,11 @@ class AdminPage {
 
         if (productData.discountPercent < 0 || productData.discountPercent > 100) {
             this.components.showNotification('Discount percent must be between 0 and 100', 'error');
+            return;
+        }
+
+        if (productData.initialStock < 0) {
+            this.components.showNotification('Initial stock must be 0 or greater', 'error');
             return;
         }
 
@@ -483,7 +505,14 @@ class AdminPage {
 
         } catch (error) {
             console.error('Error adding product:', error);
-            this.components.showNotification('Failed to add product', 'error');
+            let errorMessage = 'Failed to add product';
+            if (error.data?.error) {
+                errorMessage = error.data.error;
+            } else if (error.data?.validationErrors) {
+                const errors = Object.values(error.data.validationErrors).flat();
+                errorMessage = errors.join(', ');
+            }
+            this.components.showNotification(errorMessage, 'error');
         }
     }
 

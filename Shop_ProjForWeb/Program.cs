@@ -246,10 +246,15 @@ try
     Console.WriteLine(">>> [DB] DbContext resolved");
     await db.Database.MigrateAsync();
     Console.WriteLine(">>> [DB] Migration completed");
+    
+    // Seed the database with initial data
+    Console.WriteLine(">>> [DB] Starting seeding");
+    await Shop_ProjForWeb.Infrastructure.Persistent.Configurations.DbSeeder.SeedAsync(db);
+    Console.WriteLine(">>> [DB] Seeding completed");
 }
 catch (Exception ex)
 {
-    Console.WriteLine(">>> [DB] MIGRATION FAILED");
+    Console.WriteLine(">>> [DB] MIGRATION/SEEDING FAILED");
     Console.WriteLine(ex);
 }
 

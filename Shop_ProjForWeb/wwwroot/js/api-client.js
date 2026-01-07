@@ -3,6 +3,32 @@ class ApiClient {
     constructor(baseUrl = '/api') {
         this.baseUrl = baseUrl;
         this.defaultTimeout = 10000; // 10 seconds
+        this.authToken = null;
+    }
+
+    // Set authentication token
+    setAuthToken(token) {
+        this.authToken = token;
+        // Persist token to localStorage
+        if (token) {
+            localStorage.setItem('shop-auth-token', token);
+        } else {
+            localStorage.removeItem('shop-auth-token');
+        }
+    }
+
+    // Get authentication token
+    getAuthToken() {
+        if (!this.authToken) {
+            this.authToken = localStorage.getItem('shop-auth-token');
+        }
+        return this.authToken;
+    }
+
+    // Clear authentication token
+    clearAuthToken() {
+        this.authToken = null;
+        localStorage.removeItem('shop-auth-token');
     }
 
     // Generic HTTP request method with error handling and timeout
@@ -11,11 +37,20 @@ class ApiClient {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), this.defaultTimeout);
 
+        // Build headers with optional auth token
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+
+        // Add authorization header if token exists
+        const token = this.getAuthToken();
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const defaultOptions = {
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
-            },
+            headers,
             signal: controller.signal,
             ...options
         };
@@ -88,11 +123,60 @@ class ApiClient {
     }
 
     async postFormData(endpoint, formData) {
-        return this.request(endpoint, {
-            method: 'POST',
-            body: formData,
-            headers: {} // Let browser set Content-Type for FormData
-        });
+        // For FormData, we need to handle headers differently
+        const url = `${this.baseUrl}${endpoint}`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.defaultTimeout);
+
+        const headers = {};
+        // Add authorization header if token exists
+        const token = this.getAuthToken();
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers,
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                const errorData = await this.parseErrorResponse(response);
+                throw new ApiError(response.status, errorData.message || response.statusText, errorData);
+            }
+
+            if (response.status === 204) {
+                return null;
+            }
+
+            return await response.json();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new ApiError(408, 'Request timeout');
+            }
+            if (error instanceof ApiError) {
+                throw error;
+            }
+            throw new ApiError(0, 'Network error or server unavailable', { originalError: error });
+        }
+    }
+
+    // Authentication API methods
+    async login(email, password) {
+        const response = await this.post('/auth/token', { email, password });
+        if (response.success && response.data?.token) {
+            this.setAuthToken(response.data.token);
+        }
+        return response;
+    }
+
+    logout() {
+        this.clearAuthToken();
     }
 
     // Product API methods

@@ -25,6 +25,7 @@
                     <a href="#cart" class="nav-link" data-route="cart">
                         Cart <span class="cart-count" id="cart-count">0</span>
                     </a>
+                    <a href="#orders" class="nav-link" data-route="orders">Orders</a>
                     <a href="#account" class="nav-link" data-route="account">Account</a>
                     <a href="#admin" class="nav-link admin-only" data-route="admin" style="display: none;">Admin</a>
                 </div>
@@ -79,16 +80,19 @@
         </div>
     </div>
 
-    <!-- JavaScript Modules -->
-    <script src="js/api-client.js"></script>
-    <script src="js/state-manager.js"></script>
-    <script src="js/router.js"></script>
-    <script src="js/components.js"></script>
-    <script src="js/pages/catalog.js"></script>
-    <script src="js/pages/cart.js"></script>
-    <script src="js/pages/account.js"></script>
-    <script src="js/pages/admin.js"></script>
-    <script src="js/app.js"></script>
+    <!-- JavaScript Entry Point (ES Modules) -->
+    <script type="module" src="js/main.js"></script>
+
+    <!-- Legacy fallback for non-module browsers -->
+    <script nomodule src="js/api-client.js"></script>
+    <script nomodule src="js/state-manager.js"></script>
+    <script nomodule src="js/router.js"></script>
+    <script nomodule src="js/components.js"></script>
+    <script nomodule src="js/pages/catalog.js"></script>
+    <script nomodule src="js/pages/cart.js"></script>
+    <script nomodule src="js/pages/account.js"></script>
+    <script nomodule src="js/pages/admin.js"></script>
+    <script nomodule src="js/app.js"></script>
 </body>
 
 </html>
