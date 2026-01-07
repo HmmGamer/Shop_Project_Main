@@ -2,6 +2,7 @@ using Shop_ProjForWeb.Core.Domain.Entities;
 using Shop_ProjForWeb.Infrastructure.Persistent.DbContext;
 using Microsoft.EntityFrameworkCore;
 using Shop_ProjForWeb.Core.Domain.Enums;
+using Shop_ProjForWeb.Core.Application.Services;
 
 namespace Shop_ProjForWeb.Infrastructure.Persistent.Configurations
 {
@@ -15,35 +16,38 @@ namespace Shop_ProjForWeb.Infrastructure.Persistent.Configurations
 
             var random = new Random(42); // Fixed seed for consistent data
 
+            // Default password for seeded users (development only)
+            const string defaultPassword = "Password123!";
+
             // Seed users with hardcoded data
             // Note: IsVip is now a computed property (VipTier > 0), not stored in DB
             var users = new List<User>
             {
-                new User { FullName = "John Hooper", Email = "john.hooper@email.com", Phone = "555-0101", Address = "123 Oak Street, Springfield, IL 62701", TotalSpending = 245.50m, VipTier = 0 },
-                new User { FullName = "Sarah Mitchell", Email = "sarah.mitchell@email.com", Phone = "555-0102", Address = "456 Maple Avenue, Chicago, IL 60601", TotalSpending = 1850.75m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-45) },
-                new User { FullName = "Michael Rodriguez", Email = "michael.rodriguez@email.com", Phone = "555-0103", Address = "789 Pine Road, Austin, TX 78701", TotalSpending = 567.25m, VipTier = 0 },
-                new User { FullName = "Emily Johnson", Email = "emily.johnson@email.com", Phone = "555-0104", Address = "321 Elm Drive, Seattle, WA 98101", TotalSpending = 2340.00m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-120) },
-                new User { FullName = "David Thompson", Email = "david.thompson@email.com", Phone = "555-0105", Address = "654 Cedar Lane, Denver, CO 80201", TotalSpending = 892.30m, VipTier = 0 },
-                new User { FullName = "Jessica Williams", Email = "jessica.williams@email.com", Phone = "555-0106", Address = "987 Birch Street, Miami, FL 33101", TotalSpending = 1675.50m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-30) },
-                new User { FullName = "Christopher Brown", Email = "christopher.brown@email.com", Phone = "555-0107", Address = "147 Willow Way, Portland, OR 97201", TotalSpending = 423.75m, VipTier = 0 },
-                new User { FullName = "Amanda Davis", Email = "amanda.davis@email.com", Phone = "555-0108", Address = "258 Spruce Circle, Boston, MA 02101", TotalSpending = 756.90m, VipTier = 0 },
-                new User { FullName = "Robert Wilson", Email = "robert.wilson@email.com", Phone = "555-0109", Address = "369 Ash Boulevard, Phoenix, AZ 85001", TotalSpending = 3120.25m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-90) },
-                new User { FullName = "Lisa Anderson", Email = "lisa.anderson@email.com", Phone = "555-0110", Address = "741 Poplar Place, Nashville, TN 37201", TotalSpending = 634.40m, VipTier = 0 },
-                new User { FullName = "James Taylor", Email = "james.taylor@email.com", Phone = "555-0111", Address = "852 Hickory Hill, Atlanta, GA 30301", TotalSpending = 2890.80m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-75) },
-                new User { FullName = "Michelle Garcia", Email = "michelle.garcia@email.com", Phone = "555-0112", Address = "963 Magnolia Manor, San Diego, CA 92101", TotalSpending = 445.60m, VipTier = 0 },
-                new User { FullName = "Kevin Martinez", Email = "kevin.martinez@email.com", Phone = "555-0113", Address = "159 Dogwood Drive, Las Vegas, NV 89101", TotalSpending = 789.15m, VipTier = 0 },
-                new User { FullName = "Rachel Lee", Email = "rachel.lee@email.com", Phone = "555-0114", Address = "357 Sycamore Street, Minneapolis, MN 55401", TotalSpending = 1945.30m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-60) },
-                new User { FullName = "Daniel White", Email = "daniel.white@email.com", Phone = "555-0115", Address = "468 Chestnut Court, Detroit, MI 48201", TotalSpending = 523.85m, VipTier = 0 },
-                new User { FullName = "Nicole Harris", Email = "nicole.harris@email.com", Phone = "555-0116", Address = "579 Walnut Walk, Philadelphia, PA 19101", TotalSpending = 678.20m, VipTier = 0 },
-                new User { FullName = "Matthew Clark", Email = "matthew.clark@email.com", Phone = "555-0117", Address = "680 Beech Bay, San Francisco, CA 94101", TotalSpending = 2567.45m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-105) },
-                new User { FullName = "Stephanie Lewis", Email = "stephanie.lewis@email.com", Phone = "555-0118", Address = "791 Redwood Ridge, Houston, TX 77001", TotalSpending = 834.70m, VipTier = 0 },
-                new User { FullName = "Andrew Robinson", Email = "andrew.robinson@email.com", Phone = "555-0119", Address = "802 Cypress Cove, New York, NY 10001", TotalSpending = 3456.90m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-150) },
-                new User { FullName = "Jennifer Walker", Email = "jennifer.walker@email.com", Phone = "555-0120", Address = "913 Fir Forest, Los Angeles, CA 90001", TotalSpending = 456.35m, VipTier = 0 },
-                new User { FullName = "Ryan Hall", Email = "ryan.hall@email.com", Phone = "555-0121", Address = "124 Juniper Junction, Orlando, FL 32801", TotalSpending = 712.50m, VipTier = 0 },
-                new User { FullName = "Kimberly Allen", Email = "kimberly.allen@email.com", Phone = "555-0122", Address = "235 Laurel Lane, Salt Lake City, UT 84101", TotalSpending = 1789.25m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-25) },
-                new User { FullName = "Brandon Young", Email = "brandon.young@email.com", Phone = "555-0123", Address = "346 Hemlock Heights, Kansas City, MO 64101", TotalSpending = 598.80m, VipTier = 0 },
-                new User { FullName = "Megan King", Email = "megan.king@email.com", Phone = "555-0124", Address = "457 Sequoia Square, Charlotte, NC 28201", TotalSpending = 923.40m, VipTier = 0 },
-                new User { FullName = "Tyler Wright", Email = "tyler.wright@email.com", Phone = "555-0125", Address = "568 Cottonwood Circle, Columbus, OH 43201", TotalSpending = 2123.65m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-80) }
+                new User { FullName = "John Hooper", Email = "john.hooper@email.com", Phone = "555-0101", Address = "123 Oak Street, Springfield, IL 62701", TotalSpending = 245.50m, VipTier = 0, PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Sarah Mitchell", Email = "sarah.mitchell@email.com", Phone = "555-0102", Address = "456 Maple Avenue, Chicago, IL 60601", TotalSpending = 1850.75m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-45), PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Michael Rodriguez", Email = "michael.rodriguez@email.com", Phone = "555-0103", Address = "789 Pine Road, Austin, TX 78701", TotalSpending = 567.25m, VipTier = 0, PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Emily Johnson", Email = "emily.johnson@email.com", Phone = "555-0104", Address = "321 Elm Drive, Seattle, WA 98101", TotalSpending = 2340.00m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-120), PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "David Thompson", Email = "david.thompson@email.com", Phone = "555-0105", Address = "654 Cedar Lane, Denver, CO 80201", TotalSpending = 892.30m, VipTier = 0, PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Jessica Williams", Email = "jessica.williams@email.com", Phone = "555-0106", Address = "987 Birch Street, Miami, FL 33101", TotalSpending = 1675.50m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-30), PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Christopher Brown", Email = "christopher.brown@email.com", Phone = "555-0107", Address = "147 Willow Way, Portland, OR 97201", TotalSpending = 423.75m, VipTier = 0, PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Amanda Davis", Email = "amanda.davis@email.com", Phone = "555-0108", Address = "258 Spruce Circle, Boston, MA 02101", TotalSpending = 756.90m, VipTier = 0, PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Robert Wilson", Email = "robert.wilson@email.com", Phone = "555-0109", Address = "369 Ash Boulevard, Phoenix, AZ 85001", TotalSpending = 3120.25m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-90), PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Lisa Anderson", Email = "lisa.anderson@email.com", Phone = "555-0110", Address = "741 Poplar Place, Nashville, TN 37201", TotalSpending = 634.40m, VipTier = 0, PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "James Taylor", Email = "james.taylor@email.com", Phone = "555-0111", Address = "852 Hickory Hill, Atlanta, GA 30301", TotalSpending = 2890.80m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-75), PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Michelle Garcia", Email = "michelle.garcia@email.com", Phone = "555-0112", Address = "963 Magnolia Manor, San Diego, CA 92101", TotalSpending = 445.60m, VipTier = 0, PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Kevin Martinez", Email = "kevin.martinez@email.com", Phone = "555-0113", Address = "159 Dogwood Drive, Las Vegas, NV 89101", TotalSpending = 789.15m, VipTier = 0, PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Rachel Lee", Email = "rachel.lee@email.com", Phone = "555-0114", Address = "357 Sycamore Street, Minneapolis, MN 55401", TotalSpending = 1945.30m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-60), PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Daniel White", Email = "daniel.white@email.com", Phone = "555-0115", Address = "468 Chestnut Court, Detroit, MI 48201", TotalSpending = 523.85m, VipTier = 0, PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Nicole Harris", Email = "nicole.harris@email.com", Phone = "555-0116", Address = "579 Walnut Walk, Philadelphia, PA 19101", TotalSpending = 678.20m, VipTier = 0, PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Matthew Clark", Email = "matthew.clark@email.com", Phone = "555-0117", Address = "680 Beech Bay, San Francisco, CA 94101", TotalSpending = 2567.45m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-105), PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Stephanie Lewis", Email = "stephanie.lewis@email.com", Phone = "555-0118", Address = "791 Redwood Ridge, Houston, TX 77001", TotalSpending = 834.70m, VipTier = 0, PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Andrew Robinson", Email = "andrew.robinson@email.com", Phone = "555-0119", Address = "802 Cypress Cove, New York, NY 10001", TotalSpending = 3456.90m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-150), PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Jennifer Walker", Email = "jennifer.walker@email.com", Phone = "555-0120", Address = "913 Fir Forest, Los Angeles, CA 90001", TotalSpending = 456.35m, VipTier = 0, PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Ryan Hall", Email = "ryan.hall@email.com", Phone = "555-0121", Address = "124 Juniper Junction, Orlando, FL 32801", TotalSpending = 712.50m, VipTier = 0, PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Kimberly Allen", Email = "kimberly.allen@email.com", Phone = "555-0122", Address = "235 Laurel Lane, Salt Lake City, UT 84101", TotalSpending = 1789.25m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-25), PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Brandon Young", Email = "brandon.young@email.com", Phone = "555-0123", Address = "346 Hemlock Heights, Kansas City, MO 64101", TotalSpending = 598.80m, VipTier = 0, PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Megan King", Email = "megan.king@email.com", Phone = "555-0124", Address = "457 Sequoia Square, Charlotte, NC 28201", TotalSpending = 923.40m, VipTier = 0, PasswordHash = PasswordHasher.HashPassword(defaultPassword) },
+                new User { FullName = "Tyler Wright", Email = "tyler.wright@email.com", Phone = "555-0125", Address = "568 Cottonwood Circle, Columbus, OH 43201", TotalSpending = 2123.65m, VipTier = 1, VipUpgradedAt = DateTime.UtcNow.AddDays(-80), PasswordHash = PasswordHasher.HashPassword(defaultPassword) }
             };
 
             await db.Users.AddRangeAsync(users);

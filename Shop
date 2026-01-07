@@ -4,6 +4,7 @@ using Shop_ProjForWeb.Core.Application.Services;
 using Shop_ProjForWeb.Infrastructure.Persistent.DbContext;
 using Shop_ProjForWeb.Infrastructure.Persistent.Configurations;
 using Shop_ProjForWeb.Infrastructure.Repositories;
+using Shop_ProjForWeb.Infrastructure.Services;
 using Shop_ProjForWeb.Presentation.Middleware;
 using Microsoft.EntityFrameworkCore;
 using FluentValidation;
@@ -86,6 +87,24 @@ builder.Services.Configure<FileUploadOptions>(builder.Configuration.GetSection("
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<AgifyService>();
 
+// File Storage Services
+builder.Services.AddScoped<IFileStorageService>(sp =>
+{
+    var options = sp.GetRequiredService<IOptions<FileUploadOptions>>().Value;
+    var logger = sp.GetRequiredService<ILogger<LocalFileStorageService>>();
+    
+    return options.StorageProvider switch
+    {
+        StorageProvider.Local => new LocalFileStorageService(
+            sp.GetRequiredService<IOptions<FileUploadOptions>>()),
+        StorageProvider.AzureBlob or StorageProvider.AwsS3 => new CloudFileStorageService(
+            sp.GetRequiredService<IOptions<FileUploadOptions>>(),
+            logger),
+        _ => new LocalFileStorageService(
+            sp.GetRequiredService<IOptions<FileUploadOptions>>())
+    };
+});
+
 builder.Services.AddAuthorization();
 builder.Services.AddControllers(options =>
 {
@@ -146,6 +165,18 @@ var uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles"
 if (!Directory.Exists(uploadFolder))
 {
     Directory.CreateDirectory(uploadFolder);
+}
+
+var thumbnailFolder = Path.Combine(uploadFolder, "thumbnails");
+if (!Directory.Exists(thumbnailFolder))
+{
+    Directory.CreateDirectory(thumbnailFolder);
+}
+
+var tempFolder = Path.Combine(uploadFolder, "temp");
+if (!Directory.Exists(tempFolder))
+{
+    Directory.CreateDirectory(tempFolder);
 }
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
