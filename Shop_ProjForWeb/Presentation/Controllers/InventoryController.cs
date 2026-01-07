@@ -1,5 +1,6 @@
 namespace Shop_ProjForWeb.Presentation.Controllers;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shop_ProjForWeb.Core.Application.DTOs;
 using Shop_ProjForWeb.Core.Application.Interfaces;
@@ -26,6 +27,7 @@ public class InventoryController(
     /// <response code="404">Product not found</response>
     /// <response code="500">Internal server error</response>
     [HttpGet("{productId}")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(InventoryStatusDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -53,6 +55,7 @@ public class InventoryController(
     /// <response code="200">Returns the list of all inventory items</response>
     /// <response code="500">Internal server error</response>
     [HttpGet]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(List<InventoryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<List<InventoryDto>>> GetAllInventory()

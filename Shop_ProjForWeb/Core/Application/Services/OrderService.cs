@@ -10,13 +10,13 @@ using Shop_ProjForWeb.Core.Domain.Interfaces;
 public class OrderService(
     IUnitOfWork unitOfWork,
     PricingService pricingService,
-    InventoryService inventoryService,
+    IInventoryService inventoryService,
     VipUpgradeService vipUpgradeService,
     IOrderStateMachine orderStateMachine) : IOrderService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly PricingService _pricingService = pricingService;
-    private readonly InventoryService _inventoryService = inventoryService;
+    private readonly IInventoryService _inventoryService = inventoryService;
     private readonly VipUpgradeService _vipUpgradeService = vipUpgradeService;
     private readonly IOrderStateMachine _orderStateMachine = orderStateMachine;
 

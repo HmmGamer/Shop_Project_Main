@@ -63,6 +63,7 @@ public class UsersController(IUserService userService, IValidationService valida
     /// <response code="200">Returns the user details</response>
     /// <response code="404">User not found</response>
     [HttpGet("{id}")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UserDto>> GetUser(Guid id)
@@ -79,6 +80,7 @@ public class UsersController(IUserService userService, IValidationService valida
     /// <response code="201">User created successfully</response>
     /// <response code="400">Invalid input or validation failed</response>
     [HttpPost]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<UserDto>> CreateUser([FromBody] CreateUserDto dto)

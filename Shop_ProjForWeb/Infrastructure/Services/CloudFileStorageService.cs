@@ -475,8 +475,8 @@ public class CloudFileStorageService : IFileStorageService
             FileName = Path.GetFileName(blobName),
             ContentType = meta.Headers.ContentType,
             SizeBytes = meta.ContentLength,
-            CreatedAt = meta.LastModified?.ToUniversalTime() ?? DateTime.UtcNow,
-            ModifiedAt = meta.LastModified?.ToUniversalTime() ?? DateTime.UtcNow
+            CreatedAt = meta.LastModified.ToUniversalTime(),
+            ModifiedAt = meta.LastModified.ToUniversalTime()
         };
     }
 
