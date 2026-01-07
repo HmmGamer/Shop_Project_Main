@@ -2,8 +2,12 @@ using Shop_ProjForWeb.Core.Application.Configuration;
 using Shop_ProjForWeb.Core.Application.Interfaces;
 using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
-using System.Drawing;
-using System.Drawing.Imaging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Processing;
 
 namespace Shop_ProjForWeb.Infrastructure.Services;
 
@@ -207,7 +211,7 @@ public class LocalFileStorageService : IFileStorageService
             {
                 try
                 {
-                    using var image = Image.FromFile(fullPath);
+                    using var image = await Image.LoadAsync(fullPath);
                     metadata.Width = image.Width;
                     metadata.Height = image.Height;
                 }
@@ -229,7 +233,7 @@ public class LocalFileStorageService : IFileStorageService
         {
             throw new FileNotFoundException($"File not found: {filePath}");
         }
-        return new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return await Task.FromResult(new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read));
     }
 
     public Task<string> GeneratePresignedUrlAsync(string filePath, int expirationMinutes = 60)
@@ -317,15 +321,15 @@ public class LocalFileStorageService : IFileStorageService
 
     private string GetDefaultFolder(string contentType)
     {
-        if (contentType.StartsWith("image/"))
+        if (contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
         {
             return "images";
         }
-        if (contentType.StartsWith("video/"))
+        if (contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase))
         {
             return "videos";
         }
-        if (contentType.StartsWith("application/pdf"))
+        if (contentType.StartsWith("application/pdf", StringComparison.OrdinalIgnoreCase))
         {
             return "documents";
         }
@@ -345,7 +349,7 @@ public class LocalFileStorageService : IFileStorageService
 
     private async Task ProcessAndSaveImageAsync(IFormFile file, string filePath)
     {
-        using var image = Image.FromStream(file.OpenReadStream());
+        using var image = await Image.LoadAsync(file.OpenReadStream());
         
         // Resize if needed
         if (_options.MaxImageWidth > 0 || _options.MaxImageHeight > 0)
@@ -353,17 +357,14 @@ public class LocalFileStorageService : IFileStorageService
             var (width, height) = CalculateResizeDimensions(image.Width, image.Height);
             if (width != image.Width || height != image.Height)
             {
-                using var resized = new Bitmap(width, height);
-                using var graphics = Graphics.FromImage(resized);
-                graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-                graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
-                graphics.DrawImage(image, 0, 0, width, height);
+                image.Mutate(ctx => ctx.Resize(new ResizeOptions
+                {
+                    Size = new Size(width, height),
+                    Mode = ResizeMode.Stretch
+                }));
                 
                 var encoder = GetImageEncoder(filePath);
-                var encoderParams = GetEncoderParams();
-                
-                resized.Save(filePath, encoder, encoderParams);
+                await image.SaveAsync(filePath, encoder);
                 
                 // Generate thumbnail
                 if (_options.GenerateThumbnails)
@@ -376,9 +377,8 @@ public class LocalFileStorageService : IFileStorageService
         }
 
         // Save original
-        await using var stream = file.OpenReadStream();
-        await using var fileStream = new FileStream(filePath, FileMode.Create);
-        await stream.CopyToAsync(fileStream);
+        var encoderOriginal = GetImageEncoder(filePath);
+        await image.SaveAsync(filePath, encoderOriginal);
 
         // Generate thumbnail
         if (_options.GenerateThumbnails)
@@ -415,16 +415,14 @@ public class LocalFileStorageService : IFileStorageService
             var newWidth = (int)(originalImage.Width * ratio);
             var newHeight = (int)(originalImage.Height * ratio);
 
-            using var thumbnail = new Bitmap(newWidth, newHeight);
-            using var graphics = Graphics.FromImage(thumbnail);
-            graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-            graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
-            graphics.DrawImage(originalImage, 0, 0, newWidth, newHeight);
+            using var thumbnail = originalImage.Clone(ctx => ctx.Resize(new ResizeOptions
+            {
+                Size = new Size(newWidth, newHeight),
+                Mode = ResizeMode.Stretch
+            }));
 
             var encoder = GetImageEncoder(originalPath);
-            var encoderParams = GetEncoderParams();
-            thumbnail.Save(thumbnailPath, encoder, encoderParams);
+            await thumbnail.SaveAsync(thumbnailPath, encoder);
         }
         catch (Exception ex)
         {
@@ -433,26 +431,15 @@ public class LocalFileStorageService : IFileStorageService
         }
     }
 
-    private ImageCodecInfo GetImageEncoder(string filePath)
+    private IImageEncoder GetImageEncoder(string filePath)
     {
         var extension = Path.GetExtension(filePath)?.ToLowerInvariant();
-        var format = extension switch
+        return extension switch
         {
-            ".png" => ImageFormat.Png,
-            ".gif" => ImageFormat.Gif,
-            ".webp" => ImageFormat.Png,
-            _ => ImageFormat.Jpeg
+            ".png" => new PngEncoder(),
+            ".webp" => new WebpEncoder(),
+            _ => new JpegEncoder { Quality = _options.ImageQuality }
         };
-
-        return ImageCodecInfo.GetImageDecoders()
-            .FirstOrDefault(c => c.FormatID == format.Guid) ?? ImageCodecInfo.GetImageDecoders()[0];
-    }
-
-    private EncoderParameters GetEncoderParams()
-    {
-        var encoderParams = new EncoderParameters(1);
-        encoderParams.Param[0] = new EncoderParameter(Encoder.Quality, _options.ImageQuality);
-        return encoderParams;
     }
 
     private string GetContentType(string extension)
