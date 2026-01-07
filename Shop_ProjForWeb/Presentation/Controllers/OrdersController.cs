@@ -1,5 +1,6 @@
 namespace Shop_ProjForWeb.Presentation.Controllers;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shop_ProjForWeb.Core.Application.DTOs;
 using Shop_ProjForWeb.Core.Application.Interfaces;
@@ -26,6 +27,7 @@ public class OrdersController(
     /// <response code="200">Returns the paginated list of orders</response>
     /// <response code="500">Internal server error</response>
     [HttpGet]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(PaginatedResponse<OrderDetailDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PaginatedResponse<OrderDetailDto>>> GetAllOrders([FromQuery] PaginatedRequest request)
@@ -75,6 +77,7 @@ public class OrdersController(
     /// <response code="404">Order not found</response>
     /// <response code="500">Internal server error</response>
     [HttpGet("{id}")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(OrderDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -104,6 +107,7 @@ public class OrdersController(
     /// <response code="404">User not found</response>
     /// <response code="500">Internal server error</response>
     [HttpGet("user/{userId}")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(List<OrderDetailDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -132,6 +136,7 @@ public class OrdersController(
     /// <response code="200">Returns the list of filtered orders</response>
     /// <response code="500">Internal server error</response>
     [HttpGet("status/{status}")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(List<OrderDetailDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<List<OrderDetailDto>>> GetOrdersByStatus(OrderStatus status)
@@ -172,6 +177,7 @@ public class OrdersController(
     /// 
     /// </remarks>
     [HttpPost]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(OrderResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -219,20 +225,21 @@ public class OrdersController(
     /// Processes payment for a pending order and updates user VIP status if eligible
     /// </summary>
     /// <param name="orderId">The unique identifier of the order</param>
-    /// <returns>No content on success</returns>
-    /// <response code="204">Payment processed successfully</response>
+    /// <returns>Updated user VIP data on success</returns>
+    /// <response code="200">Payment processed successfully, returns updated user data</response>
     /// <response code="404">Order or user not found</response>
     /// <response code="500">Internal server error</response>
     [HttpPost("{orderId}/pay")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(UserVipDataDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> PayOrder(Guid orderId)
     {
         try
         {
-            await _orderService.PayOrderAsync(orderId);
-            return NoContent();
+            var updatedUserData = await _orderService.PayOrderAsync(orderId);
+            return Ok(new { success = true, updatedUserData });
         }
         catch (OrderNotFoundException ex)
         {
@@ -258,6 +265,7 @@ public class OrdersController(
     /// <response code="404">Order not found</response>
     /// <response code="500">Internal server error</response>
     [HttpDelete("{id}")]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

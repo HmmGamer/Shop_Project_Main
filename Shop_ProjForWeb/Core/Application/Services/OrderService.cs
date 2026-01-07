@@ -10,13 +10,13 @@ using Shop_ProjForWeb.Core.Domain.Interfaces;
 public class OrderService(
     IUnitOfWork unitOfWork,
     PricingService pricingService,
-    InventoryService inventoryService,
+    IInventoryService inventoryService,
     VipUpgradeService vipUpgradeService,
     IOrderStateMachine orderStateMachine) : IOrderService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly PricingService _pricingService = pricingService;
-    private readonly InventoryService _inventoryService = inventoryService;
+    private readonly IInventoryService _inventoryService = inventoryService;
     private readonly VipUpgradeService _vipUpgradeService = vipUpgradeService;
     private readonly IOrderStateMachine _orderStateMachine = orderStateMachine;
 
@@ -111,7 +111,16 @@ public class OrderService(
                 {
                     OrderId = order.Id,
                     TotalPrice = order.TotalPrice,
-                    Status = order.Status
+                    Status = order.Status,
+                    UpdatedUserData = new UserVipDataDto
+                    {
+                        Id = user.Id,
+                        FullName = user.FullName,
+                        Email = user.Email,
+                        IsVip = user.IsVip,
+                        VipTier = user.VipTier,
+                        TotalSpending = user.TotalSpending
+                    }
                 };
             }
             catch
@@ -134,7 +143,7 @@ public class OrderService(
         });
     }
 
-    public async Task PayOrderAsync(Guid orderId)
+    public async Task<UserVipDataDto?> PayOrderAsync(Guid orderId)
     {
         var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
         if (order == null)
@@ -152,6 +161,23 @@ public class OrderService(
         
         // Save changes again to ensure VIP status is persisted
         await _unitOfWork.SaveChangesAsync();
+        
+        // Return updated user data
+        var user = await _unitOfWork.Users.GetByIdAsync(order.UserId);
+        if (user != null)
+        {
+            return new UserVipDataDto
+            {
+                Id = user.Id,
+                FullName = user.FullName,
+                Email = user.Email,
+                IsVip = user.IsVip,
+                VipTier = user.VipTier,
+                TotalSpending = user.TotalSpending
+            };
+        }
+        
+        return null;
     }
 
     public async Task<OrderDetailDto> GetOrderAsync(Guid orderId)

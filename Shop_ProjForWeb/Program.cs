@@ -2,20 +2,27 @@ using Shop_ProjForWeb.Core.Application.Configuration;
 using Shop_ProjForWeb.Core.Application.Interfaces;
 using Shop_ProjForWeb.Core.Application.Services;
 using Shop_ProjForWeb.Infrastructure.Persistent.DbContext;
-using Shop_ProjForWeb.Infrastructure.Persistent.Configurations;
 using Shop_ProjForWeb.Infrastructure.Repositories;
 using Shop_ProjForWeb.Presentation.Middleware;
+
 using Microsoft.EntityFrameworkCore;
-using FluentValidation;
-using Serilog;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.OpenApi.Models;
 
+using FluentValidation;
+using Serilog;
+using System.Text;
+
+Console.WriteLine(">>> [BOOT] Program start");
+
 var builder = WebApplication.CreateBuilder(args);
+
+Console.WriteLine(">>> [BOOT] Builder created");
+
+/* ======================= SERILOG ======================= */
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -24,12 +31,35 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
+Console.WriteLine(">>> [BOOT] Serilog configured");
+
+/* ======================= DATABASE ======================= */
+
 builder.Services.AddDbContext<SupermarketDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    Console.WriteLine(">>> [DI] Configuring DbContext");
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sql => sql.CommandTimeout(5)
+    );
+});
+
+Console.WriteLine(">>> [DI] DbContext registered");
+
+/* ======================= JWT ======================= */
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>();
-var key = Encoding.UTF8.GetBytes(jwtOptions?.Key ?? string.Empty);
+
+Console.WriteLine(">>> [JWT] JwtOptions loaded");
+
+if (string.IsNullOrWhiteSpace(jwtOptions?.Key))
+{
+    Console.WriteLine(">>> [JWT] ERROR: JWT key missing");
+    throw new Exception("JWT configuration is missing or invalid");
+}
+
+var key = Encoding.UTF8.GetBytes(jwtOptions.Key);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -38,6 +68,8 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    Console.WriteLine(">>> [JWT] JwtBearer configured");
+
     options.RequireHttpsMetadata = false;
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
@@ -45,12 +77,23 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtOptions?.Issuer,
-        ValidAudience = jwtOptions?.Audience,
+        ValidIssuer = jwtOptions.Issuer,
+        ValidAudience = jwtOptions.Audience,
         IssuerSigningKey = new SymmetricSecurityKey(key),
         ClockSkew = TimeSpan.Zero
     };
 });
+
+Console.WriteLine(">>> [DI] Authentication configured");
+
+/* ======================= HTTP CLIENT ======================= */
+
+builder.Services.AddHttpClient();
+Console.WriteLine(">>> [DI] HttpClient registered");
+
+/* ======================= DI ======================= */
+
+Console.WriteLine(">>> [DI] Registering repositories & services");
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
@@ -59,73 +102,81 @@ builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderItemRepository, OrderItemRepository>();
 builder.Services.AddScoped<IVipStatusHistoryRepository, VipStatusHistoryRepository>();
 
-builder.Services.AddScoped<Shop_ProjForWeb.Core.Application.Interfaces.IUnitOfWork, Shop_ProjForWeb.Infrastructure.UnitOfWork>();
+builder.Services.AddScoped<Shop_ProjForWeb.Core.Application.Interfaces.IUnitOfWork,
+    Shop_ProjForWeb.Infrastructure.UnitOfWork>();
 
-builder.Services.AddScoped<IValidationService, ValidationService>();
-builder.Services.AddScoped<PricingService>();
-builder.Services.AddScoped<InventoryService>();
-builder.Services.AddScoped<IInventoryService, InventoryService>();
-builder.Services.AddScoped<VipUpgradeService>();
-builder.Services.AddScoped<IOrderService, OrderService>();
-builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IOrderCancellationService, OrderCancellationService>();
-builder.Services.AddScoped<ReportingService>();
-builder.Services.AddScoped<Shop_ProjForWeb.Core.Domain.Interfaces.IOrderStateMachine, OrderStateMachine>();
 builder.Services.AddScoped<Shop_ProjForWeb.Core.Domain.Interfaces.IVipStatusCalculator, VipStatusCalculator>();
 builder.Services.AddScoped<Shop_ProjForWeb.Core.Domain.Interfaces.IDiscountCalculator, AdditiveDiscountCalculator>();
+builder.Services.AddScoped<Shop_ProjForWeb.Core.Domain.Interfaces.IOrderStateMachine, OrderStateMachine>();
+
+builder.Services.AddScoped<PricingService>();
+builder.Services.AddScoped<VipUpgradeService>();
+
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IOrderCancellationService, OrderCancellationService>();
 
 builder.Services.AddScoped<JwtService>();
-
-builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-
 builder.Services.AddScoped<ProductImageService>();
-
-builder.Services.Configure<FileUploadOptions>(builder.Configuration.GetSection("FileUpload"));
-
-builder.Services.AddHttpClient();
 builder.Services.AddScoped<AgifyService>();
 
+Console.WriteLine(">>> [DI] Services registered");
+
+/* ======================= VALIDATION / FILE STORAGE ======================= */
+
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddScoped<IValidationService, ValidationService>();
+
+builder.Services.Configure<FileUploadOptions>(
+    builder.Configuration.GetSection("FileUpload"));
+
+builder.Services.AddScoped<IFileStorageService,
+    Shop_ProjForWeb.Infrastructure.Services.LocalFileStorageService>();
+
+Console.WriteLine(">>> [DI] Validation & File storage registered");
+
+/* ======================= MVC / AUTH ======================= */
+
 builder.Services.AddAuthorization();
+
 builder.Services.AddControllers(options =>
 {
     var policy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build();
+
     options.Filters.Add(new AuthorizeFilter(policy));
 });
 
+Console.WriteLine(">>> [DI] Controllers configured");
+
+/* ======================= HEALTH ======================= */
+
 builder.Services.AddHealthChecks();
+Console.WriteLine(">>> [DI] Health checks added");
+
+/* ======================= SWAGGER ======================= */
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    Console.WriteLine(">>> [DI] Swagger configuring");
+
+    c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Shop Project API",
-        Version = "v1",
-        Description = "A comprehensive e-commerce API with inventory management, order processing, and VIP customer features",
-        Contact = new Microsoft.OpenApi.Models.OpenApiContact
-        {
-            Name = "Shop Project Team"
-        }
+        Version = "v1"
     });
-    
-    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    if (File.Exists(xmlPath))
-    {
-        c.IncludeXmlComments(xmlPath);
-    }
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
         Name = "Authorization",
-        In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
-        BearerFormat = "JWT"
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -133,56 +184,104 @@ builder.Services.AddSwaggerGen(c =>
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
             },
             Array.Empty<string>()
         }
     });
 });
 
-var app = builder.Build();
+Console.WriteLine(">>> [DI] Swagger registered");
 
-var uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles");
-if (!Directory.Exists(uploadFolder))
+/* ======================= BUILD ======================= */
+
+WebApplication app;
+
+try
 {
-    Directory.CreateDirectory(uploadFolder);
+    Console.WriteLine(">>> [BUILD] Building app...");
+    app = builder.Build();
+    Console.WriteLine(">>> [BUILD] App built successfully");
 }
+catch (Exception ex)
+{
+    Console.WriteLine(">>> [BUILD] FAILED");
+    Console.WriteLine(ex);
+    throw;
+}
+
+/* ======================= LIFETIME DEBUG ======================= */
+
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    Console.WriteLine(">>> [LIFETIME] Application STARTED");
+});
+
+app.Lifetime.ApplicationStopping.Register(() =>
+{
+    Console.WriteLine(">>> [LIFETIME] Application STOPPING");
+});
+
+/* ======================= MIDDLEWARE ======================= */
+
+Console.WriteLine(">>> [PIPELINE] Registering middleware");
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseMiddleware<SerilogUserEnricherMiddleware>();
+app.UseSerilogRequestLogging();
 
-using (var scope = app.Services.CreateScope())
+/* ======================= DATABASE MIGRATION ======================= */
+
+Console.WriteLine(">>> [DB] Starting migration");
+
+try
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<SupermarketDbContext>();
+
+    Console.WriteLine(">>> [DB] DbContext resolved");
+    await db.Database.MigrateAsync();
+    Console.WriteLine(">>> [DB] Migration completed");
     
-    if (db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory")
-    {
-        db.Database.Migrate();
-        await DbSeeder.SeedAsync(db);
-    }
+    // Seed the database with initial data
+    Console.WriteLine(">>> [DB] Starting seeding");
+    await Shop_ProjForWeb.Infrastructure.Persistent.Configurations.DbSeeder.SeedAsync(db);
+    Console.WriteLine(">>> [DB] Seeding completed");
 }
+catch (Exception ex)
+{
+    Console.WriteLine(">>> [DB] MIGRATION/SEEDING FAILED");
+    Console.WriteLine(ex);
+}
+
+/* ======================= PIPELINE ======================= */
 
 if (app.Environment.IsDevelopment())
 {
+    Console.WriteLine(">>> [PIPELINE] Development mode");
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.UseMiddleware<SerilogUserEnricherMiddleware>();
-app.UseSerilogRequestLogging();
+app.UseRouting();
 
 app.UseAuthentication();
-
 app.UseAuthorization();
 
 app.MapControllers();
-
 app.MapHealthChecks("/health");
-app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
-{
-    Predicate = check => check.Tags.Contains("ready")
-});
+
+app.MapFallbackToFile("index.html");
+
+Console.WriteLine(">>> [PIPELINE] Starting app.Run()");
+Console.WriteLine(">>> [FINAL] IF YOU SEE THIS, APP IS ALIVE");
 
 app.Run();
 

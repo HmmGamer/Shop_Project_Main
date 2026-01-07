@@ -1,5 +1,6 @@
 namespace Shop_ProjForWeb.Presentation.Controllers;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shop_ProjForWeb.Core.Application.DTOs;
 using Shop_ProjForWeb.Core.Application.Interfaces;
@@ -29,6 +30,7 @@ public class ProductsController(
     /// <returns>Paginated list of products</returns>
     /// <response code="200">Returns the paginated list of products</response>
     [HttpGet]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(PaginatedResponse<ProductDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PaginatedResponse<ProductDto>>> GetAllProducts([FromQuery] PaginatedRequest request)
     {
@@ -69,6 +71,7 @@ public class ProductsController(
     /// <response code="200">Returns the product details</response>
     /// <response code="404">Product not found</response>
     [HttpGet("{id}")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ProductDto>> GetProduct(Guid id)
@@ -84,6 +87,7 @@ public class ProductsController(
     /// <response code="200">Returns the list of active products</response>
     /// <response code="500">Internal server error</response>
     [HttpGet("active")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(List<ProductDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<List<ProductDto>>> GetActiveProducts()
@@ -117,6 +121,7 @@ public class ProductsController(
     /// <response code="400">Search name is empty</response>
     /// <response code="500">Internal server error</response>
     [HttpGet("search")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(List<ProductDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]

@@ -8,6 +8,7 @@ public interface IInventoryService
     Task<bool> TryDecreaseStockAsync(Guid productId, int quantity);
     Task<bool> ReserveStockAsync(Guid productId, int quantity);
     Task ReleaseStockAsync(Guid productId, int quantity);
+    Task CommitReservationAsync(Guid productId, int quantity);
     Task IncreaseStockAsync(Guid productId, int quantity);
     Task<bool> CheckStockAvailabilityAsync(Guid productId, int quantity);
     Task<InventoryStatusDto> GetInventoryStatusAsync(Guid productId);

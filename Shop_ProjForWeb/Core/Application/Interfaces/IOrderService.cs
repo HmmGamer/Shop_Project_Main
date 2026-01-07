@@ -6,7 +6,7 @@ using Shop_ProjForWeb.Core.Domain.Enums;
 public interface IOrderService
 {
     Task<OrderResponseDto> CreateOrderAsync(Guid userId, List<CreateOrderItemDto> items);
-    Task PayOrderAsync(Guid orderId);
+    Task<UserVipDataDto?> PayOrderAsync(Guid orderId);
     Task<OrderDetailDto> GetOrderAsync(Guid orderId);
     Task<List<OrderDetailDto>> GetUserOrdersAsync(Guid userId);
     Task<List<OrderDetailDto>> GetAllOrdersAsync();
