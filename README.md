@@ -19,5 +19,7 @@
 
 کامند ها (جهت راحتی)
 cd C:\Users\stmh1\Desktop\Shop_Project_Main\Shop_ProjForWeb
+
 dotnet run
+
 http://localhost:5227/
